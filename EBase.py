@@ -146,20 +146,47 @@ class EBase:
     def drop(self, table_name:str) -> Dict[str, Union[bool, str, dict]]:
         try:
             if not self.table_exists(table_name)['data']['exists']:
-                return {'success': False, 'message': 'Table does not exist', "data": {}}
+                return {'success': False, 'message': f'Table {table_name} does not exist', "data": {}}
             
             if self.is_enabled(table_name)['data']['is_enabled']:
-                return {'success': False, 'message': 'Table is enabled, please disable it first', "data": {}}
+                return {'success': False, 'message': f'Table {table_name} is enabled, please disable it first', "data": {}}
             else:
                 table_name = table_name.replace(' ', '_')
                 table_path = os.path.join(self.relative_path, table_name+'.json')
                 os.remove(table_path)
-                return {'success': True, 'message': 'Table dropped successfully', "data": {}}
+                return {'success': True, 'message': f'Table {table_name} dropped successfully', "data": {}}
         except Exception as e:
             return {'success': False, 'message': str(e), "data": {}}
+    
+    def drop_all(self) -> Dict[str, Union[bool, str, dict]]:
+        try:
+            tables = self.list()['data']['tables']
+            errors = []
+            success = []
+            for table in tables:
+                response = self.drop(table)
+                if not response['success']:
+                    errors.append(response['message'])
+                else: 
+                    success.append(response['message'])
+            
+            res = {
+                "success": success,
+                "errors": errors
+            }
+            if len(errors) > 0:
+                return {'success': False, 'message': 'Some tables could not be dropped', "data": res}
+            
+            return {'success': True, 'message': 'All tables dropped successfully', "data": res}
+        except Exception as e:
+            return {'success': False, 'message': str(e), "data": {}}
+    
 
 db = EBase()
+#prettyPrint(db.create('userss', ['name', 'age', 'email']))
 #prettyPrint(db.disable('users'))
 #prettyPrint(db.enable('users'))
 #prettyPrint(db.is_enabled('users'))
-#prettyPrint(db.alter('users', new_name='userss'))
+#prettyPrint(db.alter('users', new_name='userss', new_column_family='phone'))
+#prettyPrint(db.drop('userss'))
+#prettyPrint(db.drop_all())
