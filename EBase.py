@@ -142,7 +142,21 @@ class EBase:
 
         except Exception as e:
             return {'success': False, 'message': str(e), "data": {}}
-
+    
+    def drop(self, table_name:str) -> Dict[str, Union[bool, str, dict]]:
+        try:
+            if not self.table_exists(table_name)['data']['exists']:
+                return {'success': False, 'message': 'Table does not exist', "data": {}}
+            
+            if self.is_enabled(table_name)['data']['is_enabled']:
+                return {'success': False, 'message': 'Table is enabled, please disable it first', "data": {}}
+            else:
+                table_name = table_name.replace(' ', '_')
+                table_path = os.path.join(self.relative_path, table_name+'.json')
+                os.remove(table_path)
+                return {'success': True, 'message': 'Table dropped successfully', "data": {}}
+        except Exception as e:
+            return {'success': False, 'message': str(e), "data": {}}
 
 db = EBase()
 #prettyPrint(db.disable('users'))
