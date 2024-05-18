@@ -15,6 +15,11 @@ class EBase:
             os.makedirs(self.relative_path)
     
     def table_exists(self, table_name:str) -> Dict[str, Union[bool, str, dict]]:
+        """
+        Check if a table exists
+        @param table_name: str
+        @return: dict - {'success': bool, 'message': str, 'data': dict}
+        """
         try:
             table_name = table_name.replace(' ', '_')
             if table_name+'.json' in os.listdir(self.relative_path):
@@ -31,6 +36,12 @@ class EBase:
             return {'success': False, 'message': str(e), "data": {}}
 
     def create(self, table_name:str, column_families: list[str]) -> Dict[str, Union[bool, str, dict]]:
+        """
+        Create a table
+        @param table_name: str
+        @param column_families: list[str]
+        @return: dict - {'success': bool, 'message': str, 'data': dict}
+        """
         try: 
             if self.table_exists(table_name)['data']['exists']:
                 return {'success': False, 'message': 'Table already exists', "data": {}}
@@ -47,6 +58,8 @@ class EBase:
                                     "table_id": str(uuid.uuid4()),
                                     "disabled": False,
                                     "created_at": str(datetime.datetime.now()),
+                                    "updated_at": str(datetime.datetime.now()),
+                                    "rows": 0,
                                 },
                                 "data": {}
                             }
@@ -57,6 +70,10 @@ class EBase:
             return {'success': False, 'message': str(e), "data": {}}
         
     def list(self) -> Dict[str, Union[bool, str, dict]]:
+        """
+        List all tables
+        @return: dict - {'success': bool, 'message': str, 'data': dict}
+        """
         try:
             files = os.listdir(self.relative_path)
             tables = []
@@ -70,6 +87,11 @@ class EBase:
             return {'success': False, 'message': str(e), "data": {}}
     
     def disable(self, table_name:str) -> Dict[str, Union[bool, str, dict]]:
+        """
+        Disable a table
+        @param table_name: str
+        @return: dict - {'success': bool, 'message': str, 'data': dict}
+        """
         try:
             if not self.table_exists(table_name)['data']['exists']:
                 return {'success': False, 'message': 'Table does not exist', "data": {}}
@@ -79,6 +101,7 @@ class EBase:
             with open(table_path, 'r') as f:
                 data = json.load(f)
             data['table_metadata']['disabled'] = True
+            data['table_metadata']['updated_at'] = str(datetime.datetime.now())
             with open(table_path, 'w') as f:
                 f.write(json.dumps(data))
             return {'success': True, 'message': 'Table disabled successfully', "data": {}}
@@ -86,6 +109,11 @@ class EBase:
             return {'success': False, 'message': str(e), "data": {}}
     
     def is_enabled(self, table_name:str) -> Dict[str, Union[bool, str, dict]]:
+        """
+        Check if a table is enabled
+        @param table_name: str
+        @return: dict - {'success': bool, 'message': str, 'data': dict}
+        """
         try:
             if not self.table_exists(table_name)['data']['exists']:
                 return {'success': False, 'message': 'Table does not exist', "data": {}}
@@ -102,6 +130,11 @@ class EBase:
             return {'success': False, 'message': str(e), "data": {}}
     
     def enable(self, table_name:str) -> Dict[str, Union[bool, str, dict]]:
+        """
+        Enable a table
+        @param table_name: str
+        @return: dict - {'success': bool, 'message': str, 'data': dict}
+        """
         try:
             if not self.table_exists(table_name)['data']['exists']:
                 return {'success': False, 'message': 'Table does not exist', "data": {}}
@@ -111,6 +144,7 @@ class EBase:
             with open(table_path, 'r') as f:
                 data = json.load(f)
             data['table_metadata']['disabled'] = False
+            data['table_metadata']['updated_at'] = str(datetime.datetime.now())
             with open(table_path, 'w') as f:
                 f.write(json.dumps(data))
             return {'success': True, 'message': 'Table enabled successfully', "data": {}}
@@ -118,6 +152,13 @@ class EBase:
             return {'success': False, 'message': str(e), "data": {}}
         
     def alter(self, table_name:str, new_name:str = None, new_column_family:str = None) -> Dict[str, Union[bool, str, dict]]:
+        """
+        Alter a table
+        @param table_name: str
+        @param new_name: str (optional)
+        @param new_column_family: str (optional)
+        @return: dict - {'success': bool, 'message': str, 'data': dict}
+        """
         try:
             if not self.table_exists(table_name)['data']['exists']:
                 return {'success': False, 'message': 'Table does not exist', "data": {}}
@@ -131,8 +172,10 @@ class EBase:
                     data = json.load(f)
                 if new_name:
                     data['table_metadata']['table_name'] = new_name
+                    data['table_metadata']['updated_at'] = str(datetime.datetime.now())
                 if new_column_family:
                     data['table_metadata']['column_families'].append(new_column_family)
+                    data['table_metadata']['updated_at'] = str(datetime.datetime.now())
                 with open(table_path, 'w') as f:
                     f.write(json.dumps(data))
                 if new_name:
@@ -144,6 +187,11 @@ class EBase:
             return {'success': False, 'message': str(e), "data": {}}
     
     def drop(self, table_name:str) -> Dict[str, Union[bool, str, dict]]:
+        """
+        Drop a table
+        @param table_name: str
+        @return: dict - {'success': bool, 'message': str, 'data': dict}
+        """
         try:
             if not self.table_exists(table_name)['data']['exists']:
                 return {'success': False, 'message': f'Table {table_name} does not exist', "data": {}}
@@ -159,6 +207,10 @@ class EBase:
             return {'success': False, 'message': str(e), "data": {}}
     
     def drop_all(self) -> Dict[str, Union[bool, str, dict]]:
+        """
+        Drop all tables
+        @return: dict - {'success': bool, 'message': str, 'data': dict}
+        """
         try:
             tables = self.list()['data']['tables']
             errors = []
@@ -181,12 +233,85 @@ class EBase:
         except Exception as e:
             return {'success': False, 'message': str(e), "data": {}}
     
+    def describe(self, table_name:str) -> Dict[str, Union[bool, str, dict]]:
+        """
+        Describe a table
+        @param table_name: str
+        @return: dict - {'success': bool, 'message': str, 'data': dict}
+        """
+        try:
+            if not self.table_exists(table_name)['data']['exists']:
+                return {'success': False, 'message': 'Table does not exist', "data": {}}
+            
+            table_name = table_name.replace(' ', '_')
+            table_path = os.path.join(self.relative_path, table_name+'.json')
+            with open(table_path, 'r') as f:
+                data = json.load(f)
+            res = {
+                "table_metadata": data['table_metadata']
+            }
+            return {'success': True, 'message': 'Table described successfully', "data": res}
+        except Exception as e:
+            return {'success': False, 'message': str(e), "data": {}}
+
+    def put(self, table_name: str, column_family: str, column: str, value: str, row_key: str = None) -> Dict[str, Union[bool, str, dict]]:
+        """
+        Insert data into a table
+        @param table_name: str
+        @param column_family: str
+        @param column: str
+        @param value: str
+        @param row_key: str (optional) - if not provided, a new row key will be generated
+        @return: dict - {'success': bool, 'message': str, 'data': dict}
+        """
+        try:
+            if not self.table_exists(table_name)['data']['exists']:
+                return {'success': False, 'message': 'Table does not exist', "data": {}}
+            
+            if not self.is_enabled(table_name)['data']['is_enabled']:
+                return {'success': False, 'message': 'Table is disabled, please enable it first', "data": {}}
+            
+            table_name = table_name.replace(' ', '_')
+            table_path = os.path.join(self.relative_path, table_name+'.json')
+            with open(table_path, 'r') as f:
+                data = json.load(f)
+            if column_family not in data['table_metadata']['column_families']:
+                return {'success': False, 'message': 'Column family does not exist', "data": {}}
+            if row_key:
+                if row_key not in data['data']:
+                    return {'success': False, 'message': 'Row key does not exist', "data": {}}
+                if column_family not in data['data'][row_key]:
+                    data['data'][row_key][column_family] = {}
+                data['data'][row_key][column_family][column] = value
+            else:
+                row_key = str(uuid.uuid4())
+                data['data'][row_key] = {
+                    column_family: {
+                        column: value
+                    }
+                }
+                data['table_metadata']['rows'] = data['table_metadata']['rows'] + 1
+            
+            with open(table_path, 'w') as f:
+                f.write(json.dumps(data))
+
+            res = {
+                "row_key": row_key
+            }
+            return {'success': True, 'message': 'Data inserted successfully', "data": res}
+
+        except Exception as e:
+            return {'success': False, 'message': str(e), "data": {}}
+
 
 db = EBase()
-#prettyPrint(db.create('userss', ['name', 'age', 'email']))
+#prettyPrint(db.create('users', ['personal', 'contact']))
 #prettyPrint(db.disable('users'))
 #prettyPrint(db.enable('users'))
 #prettyPrint(db.is_enabled('users'))
 #prettyPrint(db.alter('users', new_name='userss', new_column_family='phone'))
 #prettyPrint(db.drop('userss'))
 #prettyPrint(db.drop_all())
+#prettyPrint(db.describe('userss'))
+#prettyPrint(db.list())
+#prettyPrint(db.put('users', 'personal', 'last_name', 'Jhonson', row_key='6b612484-16b3-471b-9ddf-a066bc64395b'))
