@@ -50,7 +50,20 @@ class EBase:
         except Exception as e:
             return {'success': False, 'message': str(e), "data": {}}
     
+    def disable(self, table_name:str) -> Dict[str, Union[bool, str, dict]]:
+        try:
+            table_name = table_name.replace(' ', '_')
+            table_path = os.path.join(self.relative_path, table_name+'.json')
+            with open(table_path, 'r') as f:
+                data = json.load(f)
+            data['table_metadata']['disabled'] = True
+            with open(table_path, 'w') as f:
+                f.write(json.dumps(data))
+            return {'success': True, 'message': 'Table disabled successfully', "data": {}}
+        except Exception as e:
+            return {'success': False, 'message': str(e), "data": {}}
+    
     
 
 db = EBase()
-print(db.list())
+print(db.disable('users'))
