@@ -63,7 +63,18 @@ class EBase:
         except Exception as e:
             return {'success': False, 'message': str(e), "data": {}}
     
-    
+    def is_enabled(self, table_name:str) -> Dict[str, Union[bool, str, dict]]:
+        try:
+            table_name = table_name.replace(' ', '_')
+            table_path = os.path.join(self.relative_path, table_name+'.json')
+            with open(table_path, 'r') as f:
+                data = json.load(f)
+            res = {
+                "is_enabled": not data['table_metadata']['disabled']
+            }
+            return {'success': True, 'message': 'Table data fetched successfully', "data": res}
+        except Exception as e:
+            return {'success': False, 'message': str(e), "data": {}}
 
 db = EBase()
-print(db.disable('users'))
+print(db.is_enabled('users'))
