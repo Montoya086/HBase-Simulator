@@ -36,4 +36,21 @@ class EBase:
                 return {'success': True, 'message': 'Table created successfully', "data": {}}
         except Exception as e:
             return {'success': False, 'message': str(e), "data": {}}
+        
+    def list(self) -> Dict[str, Union[bool, str, dict]]:
+        try:
+            files = os.listdir(self.relative_path)
+            tables = []
+            for i in range(len(files)):
+                tables.append(files[i].replace('.json', ''))
+            res = {
+                "tables": tables
+            }
+            return {'success': True, 'message': 'Tables listed successfully', "data": res}
+        except Exception as e:
+            return {'success': False, 'message': str(e), "data": {}}
     
+    
+
+db = EBase()
+print(db.list())
