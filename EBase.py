@@ -354,6 +354,27 @@ class EBase:
         except Exception as e:
             return {'success': False, 'message': str(e), "data": {}}
         
+    def scan(self, table_name) -> Dict[str, Union[bool, str, dict]]:
+        """
+        Scan all data from a table
+        @param table_name: str
+        @return: dict - {'success': bool, 'message': str, 'data': dict}
+        """
+        try:
+            if not self.table_exists(table_name)['data']['exists']:
+                return {'success': False, 'message': 'Table does not exist', "data": {}}
+            
+            table_name = table_name.replace(' ', '_')
+            table_path = os.path.join(self.relative_path, table_name+'.json')
+            with open(table_path, 'r') as f:
+                data = json.load(f)
+            res = {
+                "data": data['data']
+            }
+            return {'success': True, 'message': 'Data scanned successfully', "data": res}
+        except Exception as e:
+            return {'success': False, 'message': str(e), "data": {}}
+        
 
 db = EBase()
 #prettyPrint(db.create('users', ['personal', 'contact']))
@@ -368,3 +389,4 @@ db = EBase()
 
 #prettyPrint(db.put('users', 'personal', 'last_name', 'Edison', row_key='860e68d0-3083-4740-ac5c-1a3d83280d17'))
 #prettyPrint(db.get('users', '860e68d0-3083-4740-ac5c-1a3d83280d17', 'personal', 'last_name'))
+#prettyPrint(db.scan('users'))
