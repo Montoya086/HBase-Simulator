@@ -69,7 +69,8 @@ class EBase:
                                     "max_timestamp": max_timestamp
                                 },
                                 "data": {}
-                            }
+                            },
+                            indent=4
                         )
                     )
                 return {'success': True, 'message': 'Table created successfully', "data": {}}
@@ -110,7 +111,7 @@ class EBase:
             data['table_metadata']['disabled'] = True
             data['table_metadata']['updated_at'] = str(datetime.datetime.now())
             with open(table_path, 'w') as f:
-                f.write(json.dumps(data))
+                f.write(json.dumps(data, indent=4))
             return {'success': True, 'message': 'Table disabled successfully', "data": {}}
         except Exception as e:
             return {'success': False, 'message': str(e), "data": {}}
@@ -153,7 +154,7 @@ class EBase:
             data['table_metadata']['disabled'] = False
             data['table_metadata']['updated_at'] = str(datetime.datetime.now())
             with open(table_path, 'w') as f:
-                f.write(json.dumps(data))
+                f.write(json.dumps(data, indent=4))
             return {'success': True, 'message': 'Table enabled successfully', "data": {}}
         except Exception as e:
             return {'success': False, 'message': str(e), "data": {}}
@@ -184,7 +185,7 @@ class EBase:
                     data['table_metadata']['column_families'].append(new_column_family)
                     data['table_metadata']['updated_at'] = str(datetime.datetime.now())
                 with open(table_path, 'w') as f:
-                    f.write(json.dumps(data))
+                    f.write(json.dumps(data, indent=4))
                 if new_name:
                     os.rename(table_path, os.path.join(self.relative_path, new_name+'.json'))
 
@@ -307,7 +308,7 @@ class EBase:
                 data['table_metadata']['rows'] = data['table_metadata']['rows'] + 1
             
             with open(table_path, 'w') as f:
-                f.write(json.dumps(data))
+                f.write(json.dumps(data, indent=4))
 
             res = {
                 "row_key": row_key
@@ -405,8 +406,37 @@ class EBase:
 
             data['data'][row_key][column_family][column] = {}
             with open(table_path, 'w') as f:
-                f.write(json.dumps(data))
+                f.write(json.dumps(data, indent=4))
             return {'success': True, 'message': 'Data deleted successfully', "data": {}}
+        except Exception as e:
+            return {'success': False, 'message': str(e), "data": {}}
+
+    def delete_all(self, table_name: str, row_key: str) -> Dict[str, Union[bool, str, dict]]:
+        """
+        Delete a row from a table
+        @param table_name: str
+        @param row_key: str
+        @return: dict - {'success': bool, 'message': str, 'data': dict}
+        """
+        try:
+            if not self.table_exists(table_name)['data']['exists']:
+                return {'success': False, 'message': 'Table does not exist', "data": {}}
+            
+            if not self.is_enabled(table_name)['data']['is_enabled']:
+                return {'success': False, 'message': 'Table is disabled, please enable it first', "data": {}}
+            
+            table_name = table_name.replace(' ', '_')
+            table_path = os.path.join(self.relative_path, table_name+'.json')
+            with open(table_path, 'r') as f:
+                data = json.load(f)
+            if row_key not in data['data']:
+                return {'success': False, 'message': 'Row key does not exist', "data": {}}
+
+            del data['data'][row_key]
+            data['table_metadata']['rows'] = data['table_metadata']['rows'] - 1
+            with open(table_path, 'w') as f:
+                f.write(json.dumps(data, indent=4))
+            return {'success': True, 'message': 'Row deleted successfully', "data": {}}
         except Exception as e:
             return {'success': False, 'message': str(e), "data": {}}
 
@@ -425,3 +455,4 @@ db = EBase()
 #prettyPrint(db.get('users', '860e68d0-3083-4740-ac5c-1a3d83280d17', 'personal', 'last_name'))
 #prettyPrint(db.scan('users'))
 #prettyPrint(db.delete('users', '96562231-90e3-4f7f-b472-44de8d81b737', 'personal', 'last_name'))
+#prettyPrint(db.delete_all('users', '860e68d0-3083-4740-ac5c-1a3d83280d17'))
