@@ -35,17 +35,23 @@ class EBase:
         except Exception as e:
             return {'success': False, 'message': str(e), "data": {}}
 
-    def create(self, table_name:str, column_families: list[str]) -> Dict[str, Union[bool, str, dict]]:
+    def create(self, table_name:str, column_families: list[str], max_timestamp: int = 1) -> Dict[str, Union[bool, str, dict]]:
         """
         Create a table
         @param table_name: str
         @param column_families: list[str]
+        @param max_timestamp: int (optional) - 1 as default
         @return: dict - {'success': bool, 'message': str, 'data': dict}
         """
         try: 
             if self.table_exists(table_name)['data']['exists']:
                 return {'success': False, 'message': 'Table already exists', "data": {}}
             else:
+                if len(column_families) == 0:
+                    return {'success': False, 'message': 'Column families cannot be empty', "data": {}}
+                if max_timestamp < 1:
+                    return {'success': False, 'message': 'Max timestamp should be greater than 0', "data": {}}
+                
                 table_name = table_name.replace(' ', '_')
                 table_path = os.path.join(self.relative_path, table_name+'.json')
                 with open(table_path, 'w') as f:
@@ -60,6 +66,7 @@ class EBase:
                                     "created_at": str(datetime.datetime.now()),
                                     "updated_at": str(datetime.datetime.now()),
                                     "rows": 0,
+                                    "max_timestamp": max_timestamp
                                 },
                                 "data": {}
                             }
@@ -282,12 +289,19 @@ class EBase:
                     return {'success': False, 'message': 'Row key does not exist', "data": {}}
                 if column_family not in data['data'][row_key]:
                     data['data'][row_key][column_family] = {}
-                data['data'][row_key][column_family][column] = value
+                
+                old_timestamps = list(data['data'][row_key][column_family][column].keys())
+                if len(old_timestamps) >= data['table_metadata']['max_timestamp']:
+                    old_timestamps.sort()
+                    del data['data'][row_key][column_family][column][old_timestamps[0]]
+                data['data'][row_key][column_family][column][str(datetime.datetime.now())] = value
             else:
                 row_key = str(uuid.uuid4())
                 data['data'][row_key] = {
                     column_family: {
-                        column: value
+                        column: {
+                            str(datetime.datetime.now()): value
+                        }
                     }
                 }
                 data['table_metadata']['rows'] = data['table_metadata']['rows'] + 1
@@ -303,6 +317,43 @@ class EBase:
         except Exception as e:
             return {'success': False, 'message': str(e), "data": {}}
 
+    def get(self, table_name: str, row_key: str, column_family: str, column: str) -> Dict[str, Union[bool, str, dict]]:
+        """
+        Get data from a table
+        @param table_name: str
+        @param row_key: str (optional)
+        @param column_family: str
+        @param column: str
+        @return: dict - {'success': bool, 'message': str, 'data': dict}
+        """
+        try:
+            if not self.table_exists(table_name)['data']['exists']:
+                return {'success': False, 'message': 'Table does not exist', "data": {}}
+            
+            if not self.is_enabled(table_name)['data']['is_enabled']:
+                return {'success': False, 'message': 'Table is disabled, please enable it first', "data": {}}
+            
+            table_name = table_name.replace(' ', '_')
+            table_path = os.path.join(self.relative_path, table_name+'.json')
+            with open(table_path, 'r') as f:
+                data = json.load(f)
+            if row_key not in data['data']:
+                return {'success': False, 'message': 'Row key does not exist', "data": {}}
+            if column_family not in data['data'][row_key]:
+                return {'success': False, 'message': 'Column family does not exist', "data": {}}
+            if column not in data['data'][row_key][column_family]:
+                return {'success': False, 'message': 'Column does not exist', "data": {}}
+
+            timestamps = list(data['data'][row_key][column_family][column].keys())
+            timestamps.sort()
+            last_timestamp = timestamps[-1]
+            res = {
+                "value": data['data'][row_key][column_family][column][last_timestamp]
+            }
+            return {'success': True, 'message': 'Data fetched successfully', "data": res}
+        except Exception as e:
+            return {'success': False, 'message': str(e), "data": {}}
+        
 
 db = EBase()
 #prettyPrint(db.create('users', ['personal', 'contact']))
@@ -314,4 +365,6 @@ db = EBase()
 #prettyPrint(db.drop_all())
 #prettyPrint(db.describe('userss'))
 #prettyPrint(db.list())
-#prettyPrint(db.put('users', 'personal', 'last_name', 'Jhonson', row_key='6b612484-16b3-471b-9ddf-a066bc64395b'))
+
+#prettyPrint(db.put('users', 'personal', 'last_name', 'Edison', row_key='860e68d0-3083-4740-ac5c-1a3d83280d17'))
+#prettyPrint(db.get('users', '860e68d0-3083-4740-ac5c-1a3d83280d17', 'personal', 'last_name'))
