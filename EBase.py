@@ -321,7 +321,7 @@ class EBase:
         """
         Get data from a table
         @param table_name: str
-        @param row_key: str (optional)
+        @param row_key: str
         @param column_family: str
         @param column: str
         @return: dict - {'success': bool, 'message': str, 'data': dict}
@@ -374,7 +374,41 @@ class EBase:
             return {'success': True, 'message': 'Data scanned successfully', "data": res}
         except Exception as e:
             return {'success': False, 'message': str(e), "data": {}}
-        
+
+    def delete(self, table_name: str, row_key: str, column_family: str, column: str) -> Dict[str, Union[bool, str, dict]]:
+        """
+        Delete a cell from a table
+        @param table_name: str
+        @param row_key: str
+        @param column_family: str
+        @param column: str
+        @return: dict - {'success': bool, 'message': str, 'data': dict}
+        """
+
+        try:
+            if not self.table_exists(table_name)['data']['exists']:
+                return {'success': False, 'message': 'Table does not exist', "data": {}}
+            
+            if not self.is_enabled(table_name)['data']['is_enabled']:
+                return {'success': False, 'message': 'Table is disabled, please enable it first', "data": {}}
+            
+            table_name = table_name.replace(' ', '_')
+            table_path = os.path.join(self.relative_path, table_name+'.json')
+            with open(table_path, 'r') as f:
+                data = json.load(f)
+            if row_key not in data['data']:
+                return {'success': False, 'message': 'Row key does not exist', "data": {}}
+            if column_family not in data['data'][row_key]:
+                return {'success': False, 'message': 'Column family does not exist', "data": {}}
+            if column not in data['data'][row_key][column_family]:
+                return {'success': False, 'message': 'Column does not exist', "data": {}}
+
+            data['data'][row_key][column_family][column] = {}
+            with open(table_path, 'w') as f:
+                f.write(json.dumps(data))
+            return {'success': True, 'message': 'Data deleted successfully', "data": {}}
+        except Exception as e:
+            return {'success': False, 'message': str(e), "data": {}}
 
 db = EBase()
 #prettyPrint(db.create('users', ['personal', 'contact']))
@@ -387,6 +421,7 @@ db = EBase()
 #prettyPrint(db.describe('userss'))
 #prettyPrint(db.list())
 
-#prettyPrint(db.put('users', 'personal', 'last_name', 'Edison', row_key='860e68d0-3083-4740-ac5c-1a3d83280d17'))
+#prettyPrint(db.put('users', 'personal', 'last_name', 'Edison'))
 #prettyPrint(db.get('users', '860e68d0-3083-4740-ac5c-1a3d83280d17', 'personal', 'last_name'))
 #prettyPrint(db.scan('users'))
+#prettyPrint(db.delete('users', '96562231-90e3-4f7f-b472-44de8d81b737', 'personal', 'last_name'))
