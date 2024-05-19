@@ -460,6 +460,48 @@ class EBase:
             return {'success': True, 'message': 'Rows counted successfully', "data": res}
         except Exception as e:
             return {'success': False, 'message': str(e), "data": {}}
+        
+    def truncate(self, table_name: str) -> Dict[str, Union[bool, str, dict]]:
+        """
+        Truncate a table
+        @param table_name: str
+        @return: dict - {'success': bool, 'message': str, 'data': dict}
+        """
+        try:
+            start_time = datetime.datetime.now()
+            if not self.table_exists(table_name)['data']['exists']:
+                return {'success': False, 'message': 'Table does not exist', "data": {}}
+            
+            print("- Disabling table...")
+            disable_res = self.disable(table_name)
+            if not disable_res['success']:
+                return disable_res
+            
+            table_name = table_name.replace(' ', '_')
+            table_path = os.path.join(self.relative_path, table_name+'.json')
+            with open(table_path, 'r') as f:
+                data = json.load(f)
+            
+            print("- Truncating table...")
+            data['data'] = {}
+            row_num = data['table_metadata']['rows']
+            data['table_metadata']['rows'] = 0
+            data['table_metadata']['updated_at'] = str(datetime.datetime.now())
+            with open(table_path, 'w') as f:
+                f.write(json.dumps(data, indent=4))
+
+            print("- Enabling table...")
+            enable_res = self.enable(table_name)
+            if not enable_res['success']:
+                return enable_res
+            res = {
+                "time_taken": str(datetime.datetime.now() - start_time),
+
+                "number_of_rows_deleted": row_num
+            }
+            return {'success': True, 'message': 'Table truncated successfully', "data": res}
+        except Exception as e:
+            return {'success': False, 'message': str(e), "data": {}}
 
 db = EBase()
 #prettyPrint(db.create('users', ['personal', 'contact']))
@@ -478,3 +520,4 @@ db = EBase()
 #prettyPrint(db.delete('users', '96562231-90e3-4f7f-b472-44de8d81b737', 'personal', 'last_name'))
 #prettyPrint(db.delete_all('users', '860e68d0-3083-4740-ac5c-1a3d83280d17'))
 #prettyPrint(db.count('users'))
+prettyPrint(db.truncate('users'))
