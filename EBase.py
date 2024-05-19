@@ -77,7 +77,7 @@ class EBase:
         except Exception as e:
             return {'success': False, 'message': str(e), "data": {}}
         
-    def list(self) -> Dict[str, Union[bool, str, dict]]:
+    def list_tables(self) -> Dict[str, Union[bool, str, dict]]:
         """
         List all tables
         @return: dict - {'success': bool, 'message': str, 'data': dict}
@@ -502,6 +502,107 @@ class EBase:
             return {'success': True, 'message': 'Table truncated successfully', "data": res}
         except Exception as e:
             return {'success': False, 'message': str(e), "data": {}}
+    
+    def insert_many(self, table_name: str, column_family: str, column: str, data:list) -> Dict[str, Union[bool, str, dict]]:
+        """
+        Insert many rows into a table
+        @param table_name: str
+        @param column_family: str
+        @param column: str
+        @param data: list
+        @return: dict - {'success': bool, 'message': str, 'data': dict}
+        """
+        try:
+            start_time = datetime.datetime.now()
+            if not self.table_exists(table_name)['data']['exists']:
+                return {'success': False, 'message': 'Table does not exist', "data": {}}
+            
+            if not self.is_enabled(table_name)['data']['is_enabled']:
+                return {'success': False, 'message': 'Table is disabled, please enable it first', "data": {}}
+            
+            table_name = table_name.replace(' ', '_')
+            table_path = os.path.join(self.relative_path, table_name+'.json')
+            with open(table_path, 'r') as f:
+                table_data = json.load(f)
+
+            inserted_cells = []
+            for i in range(len(data)):
+                row_key = str(uuid.uuid4())
+                table_data['data'][row_key] = {
+                    column_family: {
+                        column: {
+                            str(datetime.datetime.now()): data[i]
+                        }
+                    }
+                }
+                inserted_cells.append({
+                    "row_key": row_key,
+                    "column_family": column_family,
+                    "column": column,
+                    "value": data[i]
+                })
+                table_data['table_metadata']['rows'] = table_data['table_metadata']['rows'] + 1
+            with open(table_path, 'w') as f:
+                f.write(json.dumps(table_data, indent=4))
+            res = {
+                "time_taken": str(datetime.datetime.now() - start_time),
+                "number_of_rows_inserted": len(data),
+                "inserted_cells": inserted_cells
+            }
+            return {'success': True, 'message': 'Data inserted successfully', "data": res}
+        except Exception as e:
+            return {'success': False, 'message': str(e), "data": {}}
+    
+    def update_many(self, table_name: str, data:list[dict]) -> Dict[str, Union[bool, str, dict]]:
+        """
+        Update many rows in a table
+        @param table_name: str
+        @param data: list[dict] - [{'row_key': str, 'column_family': str, 'column': str, 'value': str}]
+        @return: dict - {'success': bool, 'message': str, 'data': dict}
+        """
+        try:
+            start_time = datetime.datetime.now()
+            if not self.table_exists(table_name)['data']['exists']:
+                return {'success': False, 'message': 'Table does not exist', "data": {}}
+            
+            if not self.is_enabled(table_name)['data']['is_enabled']:
+                return {'success': False, 'message': 'Table is disabled, please enable it first', "data": {}}
+            
+            table_name = table_name.replace(' ', '_')
+            table_path = os.path.join(self.relative_path, table_name+'.json')
+            with open(table_path, 'r') as f:
+                table_data = json.load(f)
+
+            updated_cells = []
+            for i in range(len(data)):
+                if data[i]['row_key'] not in table_data['data']:
+                    return {'success': False, 'message': 'Row key does not exist', "data": {}}
+                if data[i]['column_family'] not in table_data['data'][data[i]['row_key']]:
+                    return {'success': False, 'message': 'Column family does not exist', "data": {}}
+                if data[i]['column'] not in table_data['data'][data[i]['row_key']][data[i]['column_family']]:
+                    return {'success': False, 'message': 'Column does not exist', "data": {}}
+                
+                old_timestamps = list(table_data['data'][data[i]['row_key']][data[i]['column_family']][data[i]['column']].keys())
+                if len(old_timestamps) >= table_data['table_metadata']['max_timestamp']:
+                    old_timestamps.sort()
+                    del table_data['data'][data[i]['row_key']][data[i]['column_family']][data[i]['column']][old_timestamps[0]]
+                table_data['data'][data[i]['row_key']][data[i]['column_family']][data[i]['column']][str(datetime.datetime.now())] = data[i]['value']
+                updated_cells.append({
+                    "row_key": data[i]['row_key'],
+                    "column_family": data[i]['column_family'],
+                    "column": data[i]['column'],
+                    "value": data[i]['value']
+                })
+            with open(table_path, 'w') as f:
+                f.write(json.dumps(table_data, indent=4))
+            res = {
+                "time_taken": str(datetime.datetime.now() - start_time),
+                "number_of_rows_updated": len(data),
+                "updated_cells": updated_cells
+            }
+            return {'success': True, 'message': 'Data updated successfully', "data": res}
+        except Exception as e:
+            return {'success': False, 'message': str(e), "data": {}}
 
 db = EBase()
 #prettyPrint(db.create('users', ['personal', 'contact']))
@@ -512,7 +613,7 @@ db = EBase()
 #prettyPrint(db.drop('userss'))
 #prettyPrint(db.drop_all())
 #prettyPrint(db.describe('userss'))
-#prettyPrint(db.list())
+#prettyPrint(db.list_tables())
 
 #prettyPrint(db.put('users', 'personal', 'last_name', 'Edison'))
 #prettyPrint(db.get('users', '860e68d0-3083-4740-ac5c-1a3d83280d17', 'personal', 'last_name'))
@@ -520,4 +621,6 @@ db = EBase()
 #prettyPrint(db.delete('users', '96562231-90e3-4f7f-b472-44de8d81b737', 'personal', 'last_name'))
 #prettyPrint(db.delete_all('users', '860e68d0-3083-4740-ac5c-1a3d83280d17'))
 #prettyPrint(db.count('users'))
-prettyPrint(db.truncate('users'))
+#prettyPrint(db.truncate('users'))
+#prettyPrint(db.insert_many('users', 'personal', 'last_name', ['Edison', 'Tesla', 'Newton']))
+#prettyPrint(db.update_many('users', [{'row_key': '7939b322-5cee-4d55-83a4-77c59cdfbc78', 'column_family': 'personal', 'column': 'last_name', 'value': 'Einstein'}, {'row_key': '2e7f7ef2-75e5-435b-8e48-72089724799e', 'column_family': 'personal', 'column': 'last_name', 'value': 'Oppenheimer'}]))
