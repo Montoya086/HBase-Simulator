@@ -88,7 +88,10 @@ def main():
                 table_name = validate_input("Ingrese el nombre de la tabla a alterar: ")
                 new_name = validate_input("Nuevo nombre de la tabla (presione enter si no desea cambiarlo): ", required=False)
                 new_cf = validate_input("Nueva familia de columnas a aniadir (presione enter si no desea aniadir): ", required=False)
-                prettyPrint(db.alter(table_name.strip(), new_name.strip() or None, new_cf.strip() or None))
+                if new_cf is None and new_name is None:
+                    print("Error: debe ingresar al menos un nuevo nombre o una nueva familia de columnas.")
+                else:
+                    prettyPrint(db.alter(table_name.strip(), new_name or None, new_cf or None))
             
             elif option == '6':
                 table_name = validate_input("Ingrese el nombre de la tabla a eliminar: ")
@@ -118,9 +121,8 @@ def main():
                 column_family = validate_input("Ingrese la familia de columna: ")
                 column = validate_input("Ingrese la columna: ")
                 value = validate_input("Ingrese el valor: ")
-                row_key = validate_input("Ingrese la clave de la fila (opcional, presione enter para generar una nueva): ", required=False)
-                output = db.put(table_name.strip(), column_family.strip(), column.strip(), value.strip(), row_key.strip() or None)
-                
+                row_key = validate_input("Ingrese la clave de la fila (opcional, presione enter para generar una nueva): ")
+                output = db.put(table_name.strip(), column_family.strip(), column.strip(), value.strip(), row_key or None)
                 if validate_output(output):
                     print(f"Datos insertados correctamente en la tabla {table_name}.")
             

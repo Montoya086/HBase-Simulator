@@ -286,8 +286,11 @@ class EBase:
             if column_family not in data['table_metadata']['column_families']:
                 return {'success': False, 'message': 'Column family does not exist', "data": {}}
             if row_key:
-                if row_key not in data['data']:
-                    return {'success': False, 'message': 'Row key does not exist', "data": {}}
+                if row_key is None:
+                    row_key = str(uuid.uuid4())
+                else:
+                    if row_key not in data['data']:
+                        return {'success': False, 'message': 'Row key does not exist', "data": {}}
                 
                 if column_family not in data['data'][row_key]:
                     data['data'][row_key][column_family] = {}
@@ -603,17 +606,18 @@ class EBase:
             return {'success': False, 'message': str(e), "data": {}}
 
 db = EBase()
+
+#prettyPrint(db.list_tables())
 #prettyPrint(db.create('users', ['personal', 'contact']))
 #prettyPrint(db.disable('users'))
-#prettyPrint(db.enable('users'))
-#prettyPrint(db.is_enabled('users'))
 #prettyPrint(db.alter('users', new_name='userss', new_column_family='phone'))
 #prettyPrint(db.drop('userss'))
 #prettyPrint(db.drop_all())
 #prettyPrint(db.describe('userss'))
 #prettyPrint(db.list_tables())
-
-#prettyPrint(db.put('users', 'contact', 'phone', '213567123', '7939b322-5cee-4d55-83a4-77c59cdfbc78'))
+#prettyPrint(db.enable('userss'))
+#prettyPrint(db.is_enabled('userss'))
+#prettyPrint(db.put('userss', 'contact', 'phone', '213567123', None))
 #prettyPrint(db.get('users', '7939b322-5cee-4d55-83a4-77c59cdfbc78'))
 #prettyPrint(db.scan('users'))
 #prettyPrint(db.delete('users', '96562231-90e3-4f7f-b472-44de8d81b737', 'personal', 'last_name'))
