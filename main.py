@@ -2,24 +2,21 @@ import sys
 from EBase import EBase, prettyPrint
 
 def show_menu():
-    print("\n----- MENU DE OPERACIONES EBASE -----")
-    print("1. Crear tabla")
-    print("2. Listar tablas")
-    print("3. Deshabilitar tabla")
-    print("4. Verificar si tabla esta habilitada")
-    print("5. Alterar tabla")
-    print("6. Eliminar tabla")
-    print("7. Eliminar todas las tablas")
-    print("8. Describir tabla")
-    print("9. Insertar datos")
-    print("10. Obtener datos")
-    print("11. Escanear tabla")
-    print("12. Eliminar dato")
-    print("13. Eliminar todos los datos de una fila")
-    print("14. Contar filas en tabla")
-    print("15. Truncar tabla")
-    print("16. Salir")
-    return input("Seleccione una opcion: ")
+    print("\n" + "-"*80)
+    print("{:^80}".format("MENU DE OPERACIONES EBASE"))
+    print("-"*80)
+    print("{:<40} {:<40}".format("DDL (Definición de Datos)", "DML (Manipulación de Datos)"))
+    print("-"*80)
+    print("{:<40} {:<40}".format("1. Crear tabla", "9. Insertar datos"))
+    print("{:<40} {:<40}".format("2. Listar tablas", "10. Obtener datos"))
+    print("{:<40} {:<40}".format("3. Deshabilitar tabla", "11. Escanear tabla"))
+    print("{:<40} {:<40}".format("4. Verificar si tabla está habilitada", "12. Eliminar dato"))
+    print("{:<40} {:<40}".format("5. Alterar tabla", "13. Eliminar todos los datos de una fila"))
+    print("{:<40} {:<40}".format("6. Eliminar tabla", "14. Contar filas en tabla"))
+    print("{:<40} {:<40}".format("7. Eliminar todas las tablas", "15. Truncar tabla"))
+    print("{:<40} {:<40}".format("8. Describir tabla", "16. Salir"))
+    print("-"*80)
+    return input("\nSeleccione una opcion: ")
 
 def validate_input(prompt, required=True, type_=str):
     while True:
@@ -31,6 +28,12 @@ def validate_input(prompt, required=True, type_=str):
         except ValueError:
             print(f"Error: por favor ingrese un valor valido para {prompt}")
 
+def validate_output(output):
+    if output['success']:
+        return True
+    else:
+        print(f"Error: {output['message']}")
+
 def main():
     db = EBase()
     
@@ -40,24 +43,39 @@ def main():
         try:
             if option == '1':
                 table_name = validate_input("Ingrese el nombre de la tabla: ")
+                if not table_name.strip():
+                    print("Error: El nombre de la tabla no puede estar vacío.")
+                    continue
+                
                 column_families = validate_input("Ingrese las familias de columnas separadas por coma: ").split(',')
+                if any(cf.strip() == "" for cf in column_families):
+                    print("Error: El nombre de una familia de columnas no puede estar vacío.")
+                    continue
+                
                 prettyPrint(db.create(table_name.strip(), [cf.strip() for cf in column_families]))
             
             elif option == '2':
                 tables = db.list_tables()
-                if tables['data']:
-                    prettyPrint(tables)
-                else:
+                if tables['data']['tables'] == []:
                     print("No hay tablas para listar.")
-            
+                elif tables['data']:
+                    print(f"Total de tablas: {len(tables['data']['tables'])}")
+                    print(f"Nombres de las tablas: {', '.join(tables['data']['tables'])}")
+                
             elif option == '3':
                 table_name = validate_input("Ingrese el nombre de la tabla a deshabilitar: ")
-                prettyPrint(db.disable(table_name.strip()))
+                output = db.disable(table_name.strip())
+                
+                if validate_output(output):
+                    print(f"Tabla {table_name} deshabilitada correctamente.")
             
             elif option == '4':
                 table_name = validate_input("Ingrese el nombre de la tabla a verificar: ")
-                prettyPrint(db.is_enabled(table_name.strip()))
-            
+                output = db.is_enabled(table_name.strip())
+
+                if validate_output(output):
+                    print(f"La tabla {table_name} esta habilitada." if output['data']['is_enabled'] else f"La tabla {table_name} no esta habilitada.")
+                
             elif option == '5':
                 table_name = validate_input("Ingrese el nombre de la tabla a alterar: ")
                 new_name = validate_input("Nuevo nombre de la tabla (presione enter si no desea cambiarlo): ", required=False)
@@ -66,18 +84,26 @@ def main():
             
             elif option == '6':
                 table_name = validate_input("Ingrese el nombre de la tabla a eliminar: ")
-                prettyPrint(db.drop(table_name.strip()))
+                output = db.drop(table_name.strip())
+                
+                if validate_output(output):
+                    print(f"Tabla {table_name} eliminada correctamente.")
             
+            # REVISAR
             elif option == '7':
-                prettyPrint(db.drop_all())
+                output = db.drop_all()
+                if output['success']:
+                    print(f"Todas las tablas eliminadas correctamente.")
+                else:
+                    print('Error:', output['message'])
             
             elif option == '8':
                 table_name = validate_input("Ingrese el nombre de la tabla a describir: ")
                 description = db.describe(table_name.strip())
-                if description['success']:
-                    prettyPrint(description)
-                else:
-                    print(description['message'])
+                
+                if validate_output(description):
+                    print(f"Descripcion de la tabla {table_name}:")
+                    prettyPrint(description['data'])
             
             elif option == '9':
                 table_name = validate_input("Ingrese el nombre de la tabla: ")
@@ -87,14 +113,24 @@ def main():
                 row_key = validate_input("Ingrese la clave de la fila (opcional, presione enter para generar una nueva): ", required=False)
                 prettyPrint(db.put(table_name.strip(), column_family.strip(), column.strip(), value.strip(), row_key.strip() or None))
             
+            # REVISAR
             elif option == '10':
                 table_name = validate_input("Ingrese el nombre de la tabla: ")
                 row_key = validate_input("Ingrese la clave de la fila: ")
-                prettyPrint(db.get(table_name.strip(), row_key.strip()))
+                output = db.get(table_name.strip(), row_key.strip())
+                
+                print(output)
+                
+                if validate_output(output):
+                    print(f"Datos de la fila con clave {row_key} en la tabla {table_name}:")
+                    print(output['data'])
             
             elif option == '11':
                 table_name = validate_input("Ingrese el nombre de la tabla a escanear: ")
-                prettyPrint(db.scan(table_name.strip()))
+                output = db.scan(table_name.strip())
+                
+                if validate_output(output):
+                    print(output)
             
             elif option == '12':
                 table_name = validate_input("Ingrese el nombre de la tabla: ")
@@ -110,7 +146,10 @@ def main():
             
             elif option == '14':
                 table_name = validate_input("Ingrese el nombre de la tabla: ")
-                prettyPrint(db.count(table_name.strip()))
+                output = db.count(table_name.strip())
+                
+                if validate_output(output):
+                    print(f"Total de filas en la tabla {table_name}: {output['data']['rows']}")
             
             elif option == '15':
                 table_name = validate_input("Ingrese el nombre de la tabla a truncar: ")
