@@ -9,7 +9,7 @@ def show_menu():
     print("-"*80)
     print("{:<40} {:<40}".format("1. Crear tabla", "9. Insertar datos"))
     print("{:<40} {:<40}".format("2. Listar tablas", "10. Obtener datos"))
-    print("{:<40} {:<40}".format("3. Deshabilitar tabla", "11. Escanear tabla"))
+    print("{:<40} {:<40}".format("3. Deshabilitar / Habilitar tabla", "11. Escanear tabla"))
     print("{:<40} {:<40}".format("4. Verificar si tabla está habilitada", "12. Eliminar dato"))
     print("{:<40} {:<40}".format("5. Alterar tabla", "13. Eliminar todos los datos de una fila"))
     print("{:<40} {:<40}".format("6. Eliminar tabla", "14. Contar filas en tabla"))
@@ -26,13 +26,13 @@ def validate_input(prompt, required=True, type_=str):
         try:
             return type_(value)
         except ValueError:
-            print(f"Error: por favor ingrese un valor valido para {prompt}")
+            print(f"\nError: por favor ingrese un valor valido para {prompt}")
 
 def validate_output(output):
     if output['success']:
         return True
     else:
-        print(f"Error: {output['message']}")
+        print(f"\nError: {output['message']}")
 
 def main():
     db = EBase()
@@ -44,12 +44,12 @@ def main():
             if option == '1':
                 table_name = validate_input("Ingrese el nombre de la tabla: ")
                 if not table_name.strip():
-                    print("Error: El nombre de la tabla no puede estar vacío.")
+                    print("\nError: El nombre de la tabla no puede estar vacío.")
                     continue
                 
                 column_families = validate_input("Ingrese las familias de columnas separadas por coma: ").split(',')
                 if any(cf.strip() == "" for cf in column_families):
-                    print("Error: El nombre de una familia de columnas no puede estar vacío.")
+                    print("\nError: El nombre de una familia de columnas no puede estar vacío.")
                     continue
                 
                 prettyPrint(db.create(table_name.strip(), [cf.strip() for cf in column_families]))
@@ -63,11 +63,19 @@ def main():
                     print(f"Nombres de las tablas: {', '.join(tables['data']['tables'])}")
                 
             elif option == '3':
-                table_name = validate_input("Ingrese el nombre de la tabla a deshabilitar: ")
-                output = db.disable(table_name.strip())
+                table_name = validate_input("Ingrese el nombre de la tabla a deshabilitar/habilitar: ")
+                print("Seleccione una opcion:\n1. Deshabilitar tabla\n2. Habilitar tabla")
+                option = input("Opcion: ")
                 
-                if validate_output(output):
-                    print(f"Tabla {table_name} deshabilitada correctamente.")
+                if option == '1':
+                    output = db.disable(table_name.strip())
+                    if validate_output(output):
+                        print(f"Tabla {table_name} deshabilitada correctamente.")
+                        
+                elif option == '2':
+                    output = db.enable(table_name.strip())
+                    if validate_output(output):
+                        print(f"Tabla {table_name} habilitada correctamente.")
             
             elif option == '4':
                 table_name = validate_input("Ingrese el nombre de la tabla a verificar: ")
@@ -111,7 +119,10 @@ def main():
                 column = validate_input("Ingrese la columna: ")
                 value = validate_input("Ingrese el valor: ")
                 row_key = validate_input("Ingrese la clave de la fila (opcional, presione enter para generar una nueva): ", required=False)
-                prettyPrint(db.put(table_name.strip(), column_family.strip(), column.strip(), value.strip(), row_key.strip() or None))
+                output = db.put(table_name.strip(), column_family.strip(), column.strip(), value.strip(), row_key.strip() or None)
+                
+                if validate_output(output):
+                    print(f"Datos insertados correctamente en la tabla {table_name}.")
             
             # REVISAR
             elif option == '10':
@@ -137,13 +148,19 @@ def main():
                 row_key = validate_input("Ingrese la clave de la fila: ")
                 column_family = validate_input("Ingrese la familia de columna: ")
                 column = validate_input("Ingrese la columna: ")
-                prettyPrint(db.delete(table_name.strip(), row_key.strip(), column_family.strip(), column.strip()))
+                output = db.delete(table_name.strip(), row_key.strip(), column_family.strip(), column.strip())
+                
+                if validate_output(output):
+                    print(f"Dato eliminado correctamente de la tabla {table_name}.")
             
             elif option == '13':
                 table_name = validate_input("Ingrese el nombre de la tabla: ")
                 row_key = validate_input("Ingrese la clave de la fila: ")
-                prettyPrint(db.delete_all(table_name.strip(), row_key.strip()))
-            
+                output = db.delete_all(table_name.strip(), row_key.strip())
+                
+                if validate_output(output):
+                    print(f"Todos los datos de la fila con clave {row_key} en la tabla {table_name} eliminados correctamente.")
+                            
             elif option == '14':
                 table_name = validate_input("Ingrese el nombre de la tabla: ")
                 output = db.count(table_name.strip())
@@ -153,7 +170,10 @@ def main():
             
             elif option == '15':
                 table_name = validate_input("Ingrese el nombre de la tabla a truncar: ")
-                prettyPrint(db.truncate(table_name.strip()))
+                output = db.truncate(table_name.strip())
+                
+                if validate_output(output):
+                    print(f"Tabla {table_name} truncada correctamente.")
             
             elif option == '16':
                 print("Saliendo del programa...")
