@@ -2,20 +2,20 @@ import sys
 from EBase import EBase, prettyPrint
 
 def show_menu():
-    print("\n" + "-"*80)
-    print("{:^80}".format("MENU DE OPERACIONES EBASE"))
-    print("-"*80)
-    print("{:<40} {:<40}".format("DDL (Definición de Datos)", "DML (Manipulación de Datos)"))
-    print("-"*80)
-    print("{:<40} {:<40}".format("1. Crear tabla", "9. Insertar datos"))
-    print("{:<40} {:<40}".format("2. Listar tablas", "10. Obtener datos"))
-    print("{:<40} {:<40}".format("3. Deshabilitar / Habilitar tabla", "11. Escanear tabla"))
-    print("{:<40} {:<40}".format("4. Verificar si tabla está habilitada", "12. Eliminar dato"))
-    print("{:<40} {:<40}".format("5. Alterar tabla", "13. Eliminar todos los datos de una fila"))
-    print("{:<40} {:<40}".format("6. Eliminar tabla", "14. Contar filas en tabla"))
-    print("{:<40} {:<40}".format("7. Eliminar todas las tablas", "15. Truncar tabla"))
-    print("{:<40} {:<40}".format("8. Describir tabla", "16. Salir"))
-    print("-"*80)
+    print("\n" + "="*100)
+    print("{:^100}".format("MENU DE OPERACIONES EBASE"))
+    print("="*100)
+    print("{:<50} {:<50}".format("DDL (Definición de Datos)", "DML (Manipulación de Datos)"))
+    print("="*100)
+    print("{:<50} {:<50}".format("1. Crear tabla", "9. Insertar datos"))
+    print("{:<50} {:<50}".format("2. Listar tablas", "10. Obtener datos"))
+    print("{:<50} {:<50}".format("3. Deshabilitar / Habilitar tabla", "11. Escanear tabla"))
+    print("{:<50} {:<50}".format("4. Verificar si tabla está habilitada", "12. Eliminar dato"))
+    print("{:<50} {:<50}".format("5. Alterar tabla", "13. Eliminar todos los datos de una fila"))
+    print("{:<50} {:<50}".format("6. Eliminar tabla", "14. Contar filas en tabla"))
+    print("{:<50} {:<50}".format("7. Eliminar todas las tablas", "15. Truncar tabla"))
+    print("{:<50} {:<50}".format("8. Describir tabla", "16. Salir"))
+    print("="*100)
     return input("\nSeleccione una opcion: ")
 
 def validate_input(prompt, required=True, type_=str):
@@ -110,11 +110,22 @@ def main():
             
             elif option == '8':
                 table_name = validate_input("Ingrese el nombre de la tabla a describir: ")
-                description = db.describe(table_name.strip())
+                descripcion = db.describe(table_name.strip())
                 
-                if validate_output(description):
-                    print(f"Descripcion de la tabla {table_name}:")
-                    prettyPrint(description['data'])
+                if validate_output(descripcion):
+                    metadata = descripcion['data']
+                    print("\n" + "-"*100)
+                    print("{:^100}".format("DESCRIPCIÓN DE LA TABLA"))
+                    print("-"*100)
+                    print(f"Nombre de la tabla: {metadata['table_metadata']['table_name']}")
+                    print(f"Familias de columnas: {', '.join(metadata['table_metadata']['column_families'])}")
+                    print(f"ID de la tabla: {metadata['table_metadata']['table_id']}")
+                    print(f"Tabla deshabilitada: {'Sí' if metadata['table_metadata']['disabled'] else 'No'}")
+                    print(f"Creada en: {metadata['table_metadata']['created_at']}")
+                    print(f"Actualizada en: {metadata['table_metadata']['updated_at']}")
+                    print(f"Total de filas: {metadata['table_metadata']['rows']}")
+                    print(f"Timestamp máximo: {metadata['table_metadata']['max_timestamp']}")
+                    print("-"*100+"\n")
             
             elif option == '9':
                 table_name = validate_input("Ingrese el nombre de la tabla: ")
@@ -125,17 +136,26 @@ def main():
                 output = db.put(table_name.strip(), column_family.strip(), column.strip(), value.strip(), row_key or None)
                 print(output)
             
-            # REVISAR
             elif option == '10':
                 table_name = validate_input("Ingrese el nombre de la tabla: ")
                 row_key = validate_input("Ingrese la clave de la fila: ")
                 output = db.get(table_name.strip(), row_key.strip())
                 
-                print(output)
-                
                 if validate_output(output):
-                    print(f"Datos de la fila con clave {row_key} en la tabla {table_name}:")
-                    print(output['data'])
+                    print("\n" + "-"*100)
+                    print(f"Table: {table_name}")
+                    print(f"Row: {row_key}")
+                    print("-"*100)
+                    print("{:<32} {:<32} {:<36}".format("Column Family", "Column", "Value"))
+                    print("-"*100)
+
+                    data = output['data']['data']
+                    for family, columns in data.items():
+                        for column, value in columns.items():
+                            print("{:<32} {:<32} {:<36}".format(family, column, value))
+
+                    print("-"*100+"\n")
+
             
             elif option == '11':
                 table_name = validate_input("Ingrese el nombre de la tabla a escanear: ")
@@ -143,12 +163,21 @@ def main():
                 
                 if validate_output(output):
                     data = output['data']['data']
-                    print("\n-----------------ROW---------------------------------COLUMN+CELL-----------------------")
+                    print("\n" + "-"*100)
+                    print("{:^100}".format("Contenido de la tabla: " + table_name))
+                    print("-"*100)
+                    print("{:<40} {:<60}".format("Row", "Column+Cell"))
+                    print("-"*100)
+
                     for row_key, families in data.items():
                         for family, columns in families.items():
                             for column, timestamps in columns.items():
                                 for timestamp, value in timestamps.items():
-                                    print(f'{row_key} | column={family}:{column}, timestamp={timestamp}, value={value}')
+                                    cell_info = f'column={family}:{column}, ts={timestamp}, value={value}'
+                                    print("{:<40} {:<60}".format(row_key, cell_info))
+
+                    print("-"*100+"\n")
+                    
             elif option == '12':
                 table_name = validate_input("Ingrese el nombre de la tabla: ")
                 row_key = validate_input("Ingrese la clave de la fila: ")
