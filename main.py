@@ -142,8 +142,13 @@ def main():
                 output = db.scan(table_name.strip())
                 
                 if validate_output(output):
-                    print(output)
-            
+                    data = output['data']['data']
+                    print("\n-----------------ROW---------------------------------COLUMN+CELL-----------------------")
+                    for row_key, families in data.items():
+                        for family, columns in families.items():
+                            for column, timestamps in columns.items():
+                                for timestamp, value in timestamps.items():
+                                    print(f'{row_key} | column={family}:{column}, timestamp={timestamp}, value={value}')
             elif option == '12':
                 table_name = validate_input("Ingrese el nombre de la tabla: ")
                 row_key = validate_input("Ingrese la clave de la fila: ")
