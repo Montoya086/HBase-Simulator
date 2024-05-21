@@ -51,8 +51,8 @@ def main():
                 if any(cf.strip() == "" for cf in column_families):
                     print("\nError: El nombre de una familia de columnas no puede estar vacío.")
                     continue
-                
-                prettyPrint(db.create(table_name.strip(), [cf.strip() for cf in column_families]))
+                number_timestamps = validate_input("Ingrese la cantidad de TimeStamps que desea usar (presione enter si no desea cambiarlo): ", True,  int)
+                prettyPrint(db.create(table_name.strip(), [cf.strip() for cf in column_families], number_timestamps))
             
             elif option == '2':
                 tables = db.list_tables()
@@ -123,8 +123,7 @@ def main():
                 value = validate_input("Ingrese el valor: ")
                 row_key = validate_input("Ingrese la clave de la fila (opcional, presione enter para generar una nueva): ")
                 output = db.put(table_name.strip(), column_family.strip(), column.strip(), value.strip(), row_key or None)
-                if validate_output(output):
-                    print(f"Datos insertados correctamente en la tabla {table_name}.")
+                print(output)
             
             # REVISAR
             elif option == '10':
