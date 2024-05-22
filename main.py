@@ -1,5 +1,6 @@
 import sys
 from EBase import EBase, prettyPrint
+import pandas as pd
 
 def show_menu():
     print("\n" + "="*100)
@@ -7,14 +8,15 @@ def show_menu():
     print("="*100)
     print("{:<50} {:<50}".format("DDL (Definición de Datos)", "DML (Manipulación de Datos)"))
     print("="*100)
-    print("{:<50} {:<50}".format("1. Crear tabla", "9. Insertar datos"))
-    print("{:<50} {:<50}".format("2. Listar tablas", "10. Obtener datos"))
-    print("{:<50} {:<50}".format("3. Deshabilitar / Habilitar tabla", "11. Escanear tabla"))
-    print("{:<50} {:<50}".format("4. Verificar si tabla está habilitada", "12. Eliminar dato"))
-    print("{:<50} {:<50}".format("5. Alterar tabla", "13. Eliminar todos los datos de una fila"))
-    print("{:<50} {:<50}".format("6. Eliminar tabla", "14. Contar filas en tabla"))
-    print("{:<50} {:<50}".format("7. Eliminar todas las tablas", "15. Truncar tabla"))
-    print("{:<50} {:<50}".format("8. Describir tabla", "16. Salir"))
+    print("{:<50} {:<50}".format("1. Crear tabla", "10. Insertar datos"))
+    print("{:<50} {:<50}".format("2. Listar tablas", "11. Obtener datos"))
+    print("{:<50} {:<50}".format("3. Deshabilitar / Habilitar tabla", "12. Escanear tabla"))
+    print("{:<50} {:<50}".format("4. Verificar si tabla está habilitada", "13. Eliminar dato"))
+    print("{:<50} {:<50}".format("5. Alterar tabla", "14. Eliminar todos los datos de una fila"))
+    print("{:<50} {:<50}".format("6. Eliminar tabla", "15. Contar filas en tabla"))
+    print("{:<50} {:<50}".format("7. Eliminar todas las tablas", "16. Truncar tabla"))
+    print("{:<50} {:<50}".format("8. Describir tabla", "17. Alterar muchos"))
+    print("{:<50} {:<50}".format("9. Salir", "18. Insertar muchos datos"))
     print("="*100)
     return input("\nSeleccione una opcion: ")
 
@@ -126,8 +128,12 @@ def main():
                     print(f"Total de filas: {metadata['table_metadata']['rows']}")
                     print(f"Timestamp máximo: {metadata['table_metadata']['max_timestamp']}")
                     print("-"*100+"\n")
-            
+                
             elif option == '9':
+                print("Saliendo del programa...")
+                break
+            
+            elif option =='10':
                 table_name = validate_input("Ingrese el nombre de la tabla: ")
                 column_family = validate_input("Ingrese la familia de columna: ")
                 column = validate_input("Ingrese la columna: ")
@@ -136,7 +142,7 @@ def main():
                 output = db.put(table_name.strip(), column_family.strip(), column.strip(), value.strip(), row_key or None)
                 print(output)
             
-            elif option == '10':
+            elif option == '11':
                 table_name = validate_input("Ingrese el nombre de la tabla: ")
                 row_key = validate_input("Ingrese la clave de la fila: ")
                 output = db.get(table_name.strip(), row_key.strip())
@@ -157,7 +163,7 @@ def main():
                     print("-"*100+"\n")
 
             
-            elif option == '11':
+            elif option == '12':
                 table_name = validate_input("Ingrese el nombre de la tabla a escanear: ")
                 output = db.scan(table_name.strip())
                 
@@ -178,7 +184,7 @@ def main():
 
                     print("-"*100+"\n")
                     
-            elif option == '12':
+            elif option == '13':
                 table_name = validate_input("Ingrese el nombre de la tabla: ")
                 row_key = validate_input("Ingrese la clave de la fila: ")
                 column_family = validate_input("Ingrese la familia de columna: ")
@@ -188,7 +194,7 @@ def main():
                 if validate_output(output):
                     print(f"Dato eliminado correctamente de la tabla {table_name}.")
             
-            elif option == '13':
+            elif option == '14':
                 table_name = validate_input("Ingrese el nombre de la tabla: ")
                 row_key = validate_input("Ingrese la clave de la fila: ")
                 output = db.delete_all(table_name.strip(), row_key.strip())
@@ -196,23 +202,49 @@ def main():
                 if validate_output(output):
                     print(f"Todos los datos de la fila con clave {row_key} en la tabla {table_name} eliminados correctamente.")
                             
-            elif option == '14':
+            elif option == '15':
                 table_name = validate_input("Ingrese el nombre de la tabla: ")
                 output = db.count(table_name.strip())
                 
                 if validate_output(output):
                     print(f"Total de filas en la tabla {table_name}: {output['data']['rows']}")
             
-            elif option == '15':
+            elif option == '16':
                 table_name = validate_input("Ingrese el nombre de la tabla a truncar: ")
                 output = db.truncate(table_name.strip())
                 
                 if validate_output(output):
                     print(f"Tabla {table_name} truncada correctamente.")
             
-            elif option == '16':
-                print("Saliendo del programa...")
-                break
+            elif option == '17':
+                print()
+            
+            elif option == '18':
+                path = validate_input("Ingrese el nombre de su csv con los datos a ingresar: ")
+                df = pd.read_csv(path + '.csv')
+                table_name = validate_input("Ingrese el nombre de la tabla a insertar los datos: ")
+                column_family = validate_input("Ingrese la familia de columna: ")
+                column = validate_input("Ingrese la columna: ")
+                data_to_insert = df[column].tolist()
+                result = db.insert_many(table_name, column_family, column, data_to_insert)
+                if validate_output(result):
+                    data = result['data']['inserted_cells']
+                    print("\n" + "-"*100)
+                    print("{:^100}".format("Contenido insertado en la tabla: " + table_name))
+                    print("-"*100)
+                    print("{:<40} {:<60}".format("Row", "Column+Cell"))
+                    print("-"*100)
+                # Iterar directamente sobre la lista de diccionarios
+                    for cell in data:
+                        row_key = cell['row_key']
+                        family = cell['column_family']
+                        column = cell['column']
+                        value = cell['value']
+                        cell_value = cell['value'] # Obtiene el valor insertado
+                        cell_info = f'column={family}:{column}, value={cell_value}'
+                        print("{:<40} {:<60}".format(row_key, cell_info))
+
+                    print("-"*100+"\n")
             
             else:
                 print("Opcion no válida. Intente de nuevo.")
