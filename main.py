@@ -217,7 +217,31 @@ def main():
                     print(f"Tabla {table_name} truncada correctamente.")
             
             elif option == '17':
-                print()
+                path = validate_input("Ingrese el nombre de su csv con los datos a modificar: ")
+                table_name = validate_input("Ingrese el nombre de la tabla a insertar los datos: ")
+                df = pd.read_csv(path + '.csv')
+                updates = df.to_dict(orient='records')
+                result = db.update_many(table_name, updates)
+                if validate_output(result):
+                    rows = result['data']['number_of_rows_updated']
+                    data = result['data']['updated_cells']
+                    print("\n" + "-"*100)
+                    print("{:^100}".format("Datos insertados correctamente en la tabla " + table_name))
+                    print("{:^100}".format("La cantidad de filas actualizadas " + str(rows)))
+                    print("-"*100)
+                    print("{:<40} {:<60}".format("Row", "Column+Cell"))
+                    print("-"*100)
+                    # Iterar directamente sobre la lista de diccionarios
+                    for cell in data:
+                        row_key = cell['row_key']
+                        family = cell['column_family']
+                        column = cell['column']
+                        value = cell['value']
+                        cell_value = cell['value'] # Obtiene el valor insertado
+                        cell_info = f'column={family}:{column}, value={cell_value}'
+                        print("{:<40} {:<60}".format(row_key, cell_info))
+
+                    print("-"*100+"\n")
             
             elif option == '18':
                 path = validate_input("Ingrese el nombre de su csv con los datos a ingresar: ")
