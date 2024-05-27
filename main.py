@@ -54,7 +54,8 @@ def main():
                     print("\nError: El nombre de una familia de columnas no puede estar vacío.")
                     continue
                 number_timestamps = validate_input("Ingrese la cantidad de TimeStamps que desea usar (presione enter si no desea cambiarlo): ", True,  int)
-                prettyPrint(db.create(table_name.strip(), [cf.strip() for cf in column_families], number_timestamps))
+                data = db.create(table_name.strip(), [cf.strip() for cf in column_families], number_timestamps)
+                print("\n"+data["message"])
             
             elif option == '2':
                 tables = db.list_tables()
@@ -93,7 +94,8 @@ def main():
                 if new_cf is None and new_name is None:
                     print("Error: debe ingresar al menos un nuevo nombre o una nueva familia de columnas.")
                 else:
-                    prettyPrint(db.alter(table_name.strip(), new_name or None, new_cf or None))
+                    data = db.alter(table_name.strip(), new_name or None, new_cf or None)
+                    print("\n" + data["message"])
             
             elif option == '6':
                 table_name = validate_input("Ingrese el nombre de la tabla a eliminar: ")

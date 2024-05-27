@@ -220,7 +220,7 @@ class EBase:
         @return: dict - {'success': bool, 'message': str, 'data': dict}
         """
         try:
-            tables = self.list()['data']['tables']
+            tables = self.list_tables()['data']['tables']
             errors = []
             success = []
             for table in tables:
