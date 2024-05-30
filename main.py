@@ -15,7 +15,7 @@ def show_menu():
     print("{:<50} {:<50}".format("5. Alterar tabla", "14. Eliminar todos los datos de una fila"))
     print("{:<50} {:<50}".format("6. Eliminar tabla", "15. Contar filas en tabla"))
     print("{:<50} {:<50}".format("7. Eliminar todas las tablas", "16. Truncar tabla"))
-    print("{:<50} {:<50}".format("8. Describir tabla", "17. Alterar muchos"))
+    print("{:<50} {:<50}".format("8. Describir tabla", "17. Actualizar muchos"))
     print("{:<50} {:<50}".format("9. Salir", "18. Insertar muchos datos"))
     print("="*100)
     return input("\nSeleccione una opcion: ")

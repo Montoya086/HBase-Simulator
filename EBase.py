@@ -4,6 +4,7 @@ import json
 from typing import Dict, Union
 import datetime
 import pandas as pd
+import numpy as np
 
 def prettyPrint(data:dict) -> str:
         print(json.dumps(data, indent=4))
@@ -537,9 +538,10 @@ class EBase:
                     column_family: {}
                 }
                 for j in range(len(data_frame.columns)):
-                    table_data['data'][row_key][column_family][data_frame.columns[j]] = {
-                        str(datetime.datetime.now()): data_frame.iloc[i, j]
-                    }
+                    if data_frame.iloc[i, j] != "''":
+                        table_data['data'][row_key][column_family][data_frame.columns[j]] = {
+                            str(datetime.datetime.now()): data_frame.iloc[i, j]
+                        }
                 table_data['table_metadata']['rows'] = table_data['table_metadata']['rows'] + 1
                 inserted_rows.append({
                     "row_key": row_key,
