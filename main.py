@@ -36,6 +36,20 @@ def validate_output(output):
     else:
         print(f"\nError: {output['message']}")
 
+def get_number_timestamps():
+    while True:
+        user_input = input("Ingrese la cantidad de TimeStamps que desea usar (presione enter si no desea cambiarlo): ")
+        if not user_input.strip():  # Si el usuario presiona enter sin ingresar nada.
+            return 3  # Asignamos 3 como valor predeterminado.
+        else:
+            try:
+                # Intenta convertir la entrada del usuario a entero.
+                validated_input = int(user_input)
+                return validated_input  # Retorna el valor convertido si es válido.
+            except ValueError:
+                # Si la conversión falla, imprime un mensaje de error y repite el bucle.
+                print("Error: por favor ingrese un valor válido para la cantidad de TimeStamps.")
+
 def main():
     db = EBase()
     
@@ -53,7 +67,7 @@ def main():
                 if any(cf.strip() == "" for cf in column_families):
                     print("\nError: El nombre de una familia de columnas no puede estar vacío.")
                     continue
-                number_timestamps = validate_input("Ingrese la cantidad de TimeStamps que desea usar (presione enter si no desea cambiarlo): ", True,  int)
+                number_timestamps = get_number_timestamps()
                 data = db.create(table_name.strip(), [cf.strip() for cf in column_families], number_timestamps)
                 print("\n"+data["message"])
             
