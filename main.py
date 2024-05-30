@@ -250,9 +250,9 @@ def main():
                 df = pd.read_csv(path + '.csv')
                 table_name = validate_input("Ingrese el nombre de la tabla a insertar los datos: ")
                 column_family = validate_input("Ingrese la familia de columna: ")
-                column = validate_input("Ingrese la columna: ")
-                data_to_insert = df[column].tolist()
-                result = db.insert_many(table_name, column_family, column, data_to_insert)
+                for column in df.columns:
+                    data_to_insert = df[column].tolist()
+                    result = db.insert_many(table_name, column_family, column, data_to_insert)
                 if validate_output(result):
                     data = result['data']['inserted_cells']
                     print("\n" + "-"*100)
