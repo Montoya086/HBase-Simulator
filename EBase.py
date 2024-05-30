@@ -3,6 +3,7 @@ import os
 import json
 from typing import Dict, Union
 import datetime
+import pandas as pd
 
 def prettyPrint(data:dict) -> str:
         print(json.dumps(data, indent=4))
@@ -504,13 +505,12 @@ class EBase:
         except Exception as e:
             return {'success': False, 'message': str(e), "data": {}}
     
-    def insert_many(self, table_name: str, column_family: str, column: str, data:list) -> Dict[str, Union[bool, str, dict]]:
+    def insert_many(self, table_name: str, column_family: str, data_frame: pd.DataFrame) -> Dict[str, Union[bool, str, dict]]:
         """
         Insert many rows into a table
         @param table_name: str
         @param column_family: str
-        @param column: str
-        @param data: list
+        @param data_frame: pd.DataFrame
         @return: dict - {'success': bool, 'message': str, 'data': dict}
         """
         try:
@@ -526,29 +526,32 @@ class EBase:
             with open(table_path, 'r') as f:
                 table_data = json.load(f)
 
-            inserted_cells = []
-            for i in range(len(data)):
+            # Serialize data frame
+            for col in data_frame.select_dtypes(include=['int64', 'int32']).columns:
+                data_frame[col] = data_frame[col].astype(str)
+
+            inserted_rows = []
+            for i in range(len(data_frame)):
                 row_key = str(uuid.uuid4())
                 table_data['data'][row_key] = {
-                    column_family: {
-                        column: {
-                            str(datetime.datetime.now()): data[i]
-                        }
-                    }
+                    column_family: {}
                 }
-                inserted_cells.append({
-                    "row_key": row_key,
-                    "column_family": column_family,
-                    "column": column,
-                    "value": data[i]
-                })
+                for j in range(len(data_frame.columns)):
+                    table_data['data'][row_key][column_family][data_frame.columns[j]] = {
+                        str(datetime.datetime.now()): data_frame.iloc[i, j]
+                    }
                 table_data['table_metadata']['rows'] = table_data['table_metadata']['rows'] + 1
+                inserted_rows.append({
+                    "row_key": row_key,
+                    "data": dict(data_frame.iloc[i])
+                })
             with open(table_path, 'w') as f:
                 f.write(json.dumps(table_data, indent=4))
+            
             res = {
                 "time_taken": str(datetime.datetime.now() - start_time),
-                "number_of_rows_inserted": len(data),
-                "inserted_cells": inserted_cells
+                "number_of_rows_inserted": len(data_frame),
+                "inserted_rows": inserted_rows
             }
             return {'success': True, 'message': 'Data inserted successfully', "data": res}
         except Exception as e:

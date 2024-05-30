@@ -250,25 +250,21 @@ def main():
                 df = pd.read_csv(path + '.csv')
                 table_name = validate_input("Ingrese el nombre de la tabla a insertar los datos: ")
                 column_family = validate_input("Ingrese la familia de columna: ")
-                for column in df.columns:
-                    data_to_insert = df[column].tolist()
-                    result = db.insert_many(table_name, column_family, column, data_to_insert)
+                result = db.insert_many(table_name, column_family, df)
                 if validate_output(result):
-                    data = result['data']['inserted_cells']
+                    data = result['data']['inserted_rows']
                     print("\n" + "-"*100)
                     print("{:^100}".format("Contenido insertado en la tabla: " + table_name))
                     print("-"*100)
                     print("{:<40} {:<60}".format("Row", "Column+Cell"))
                     print("-"*100)
                 # Iterar directamente sobre la lista de diccionarios
-                    for cell in data:
-                        row_key = cell['row_key']
-                        family = cell['column_family']
-                        column = cell['column']
-                        value = cell['value']
-                        cell_value = cell['value'] # Obtiene el valor insertado
-                        cell_info = f'column={family}:{column}, value={cell_value}'
-                        print("{:<40} {:<60}".format(row_key, cell_info))
+                    for row in data:
+                        row_key = row['row_key']
+                        row_data = row['data']
+                        for column, value in row_data.items():
+                            cell_info = f'column={column_family}:{column}, value={value}'
+                            print("{:<40} {:<60}".format(row_key, cell_info))
 
                     print("-"*100+"\n")
             
